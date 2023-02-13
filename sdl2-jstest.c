@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <SDL.h>
+#include <SDL2/SDL_joystick.h>
 #include <assert.h>
 #include <curses.h>
 #include <errno.h>
@@ -65,7 +66,7 @@ void print_joystick_info(int joy_idx, SDL_Joystick* joy, SDL_GameController* gam
     SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str));
 
     printf("Joystick Name:     '%s'\n", SDL_JoystickName(joy));
-    printf("Joystick Path:     '%s'\n", SDL_JoystickDevicePathById(joy_idx));
+    printf("Joystick Path:     '%s'\n", SDL_JoystickPathForIndex(joy_idx));
     printf("Joystick GUID:     %s\n", guid_str);
     printf("Joystick Number:   %2d\n", joy_idx);
     printf("Number of Axes:    %2d\n", SDL_JoystickNumAxes(joy));
@@ -86,15 +87,15 @@ void print_joystick_info(int joy_idx, SDL_Joystick* joy, SDL_GameController* gam
     /* display the list of axes and buttons */
     for (i = 0; i < SDL_JoystickNumAxes(joy); i++)
     {
-        printf("Axis code %2d:   %2d\n", i, SDL_JoystickAxisEventCodeById(joy_idx, i));
+        printf("Axis code %2d:   %2d\n", i, SDL_JoystickGetAxis(joy, i));
     }
     for (i = 0; i < SDL_JoystickNumButtons(joy); i++)
     {
-        printf("Button code %2d:   %2d\n", i, SDL_JoystickButtonEventCodeById(joy_idx, i));
+        printf("Button code %2d:   %2d\n", i, SDL_JoystickGetButton(joy, i));
     }
     for (i = 0; i < SDL_JoystickNumHats(joy); i++)
     {
-        printf("Hat code %2d:   %2d\n", i, SDL_JoystickHatEventCodeById(joy_idx, i));
+        printf("Hat code %2d:   %2d\n", i, SDL_JoystickGetHat(joy, i));
     }
 
     printf("\n");
@@ -167,7 +168,7 @@ void infopath()
         else
         {
             SDL_GameController* gamepad = SDL_GameControllerOpen(joy_idx);
-            printf("%s %i\n", SDL_JoystickDevicePathById(joy_idx), joy_idx);
+            printf("%s %i\n", SDL_JoystickPathForIndex(joy_idx), joy_idx);
             if (gamepad)
             {
                 SDL_GameControllerClose(gamepad);
@@ -498,25 +499,25 @@ void event_joystick(int joy_idx)
             case SDL_JOYAXISMOTION:
                 printf("SDL_JOYAXISMOTION: joystick: %d axis: %d value: %d code: %d\n",
                         event.jaxis.which, event.jaxis.axis, event.jaxis.value,
-                        SDL_JoystickAxisEventCodeById(event.jbutton.which, event.jbutton.button));
+                        SDL_JoystickGetAxis(joy, event.jbutton.button));
                 break;
 
             case SDL_JOYBUTTONDOWN:
                 printf("SDL_JOYBUTTONDOWN: joystick: %d button: %d state: %d code:%d\n",
                         event.jbutton.which, event.jbutton.button, event.jbutton.state,
-                        SDL_JoystickButtonEventCodeById(event.jbutton.which, event.jbutton.button));
+                        SDL_JoystickGetButton(joy, event.jbutton.button));
                 break;
 
             case SDL_JOYBUTTONUP:
                 printf("SDL_JOYBUTTONUP: joystick: %d button: %d state: %d code:%d\n",
                         event.jbutton.which, event.jbutton.button, event.jbutton.state,
-                        SDL_JoystickButtonEventCodeById(event.jbutton.which, event.jbutton.button));
+                        SDL_JoystickGetButton(joy, event.jbutton.button));
                 break;
 
             case SDL_JOYHATMOTION:
                 printf("SDL_JOYHATMOTION: joystick: %d hat: %d value: %d code: %d\n",
                         event.jhat.which, event.jhat.hat, event.jhat.value,
-                        SDL_JoystickHatEventCodeById(event.jbutton.which, event.jbutton.button));
+                        SDL_JoystickGetHat(joy, event.jbutton.button));
                 break;
 
             case SDL_JOYBALLMOTION:
