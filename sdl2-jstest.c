@@ -59,9 +59,11 @@ void print_joystick_info(int joy_idx, SDL_Joystick* joy, SDL_GameController* gam
 {
   SDL_JoystickGUID guid = SDL_JoystickGetGUID(joy);
   char guid_str[1024];
+  int i;
   SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str));
 
   printf("Joystick Name:     '%s'\n", SDL_JoystickName(joy));
+  printf("Joystick Path:     '%s'\n", SDL_JoystickDevicePathById(joy_idx));
   printf("Joystick GUID:     %s\n", guid_str);
   printf("Joystick Number:   %2d\n", joy_idx);
   printf("Number of Axes:    %2d\n", SDL_JoystickNumAxes(joy));
@@ -78,6 +80,18 @@ void print_joystick_info(int joy_idx, SDL_Joystick* joy, SDL_GameController* gam
     printf("  Name:    '%s'\n", SDL_GameControllerName(gamepad));
     printf("  Mapping: '%s'\n", SDL_GameControllerMappingForGUID(guid));
   }
+
+  /* display the list of axes and buttons */
+  for(i=0; i<SDL_JoystickNumAxes(joy); i++) {
+    printf("Axis code %2d:   %2d\n", i, SDL_JoystickAxisEventCodeById(joy_idx, i));
+  }
+  for(i=0; i<SDL_JoystickNumButtons(joy); i++) {
+    printf("Button code %2d:   %2d\n", i, SDL_JoystickButtonEventCodeById(joy_idx, i));
+  }
+  for(i=0; i<SDL_JoystickNumHats(joy); i++) {
+    printf("Hat code %2d:   %2d\n", i, SDL_JoystickHatEventCodeById(joy_idx, i));
+  }
+
   printf("\n");
 }
 
@@ -130,6 +144,26 @@ void list_joysticks()
         }
         SDL_JoystickClose(joy);
       }
+    }
+  }
+}
+
+void infopath()
+{
+  int num_joysticks = SDL_NumJoysticks();
+
+  for(int joy_idx = 0; joy_idx < num_joysticks; ++joy_idx) {
+    SDL_Joystick* joy = SDL_JoystickOpen(joy_idx);
+    if (!joy) {
+        fprintf(stderr, "Unable to open joystick %d\n", joy_idx);
+    } else {
+      SDL_GameController* gamepad = SDL_GameControllerOpen(joy_idx);
+      printf("%s %i\n", SDL_JoystickDevicePathById(joy_idx), joy_idx);
+      if (gamepad)
+        {
+          SDL_GameControllerClose(gamepad);
+        }
+      SDL_JoystickClose(joy);
     }
   }
 }
@@ -451,23 +485,23 @@ void event_joystick(int joy_idx)
       switch(event.type)
       {
         case SDL_JOYAXISMOTION:
-          printf("SDL_JOYAXISMOTION: joystick: %d axis: %d value: %d\n",
-                 event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+          printf("SDL_JOYAXISMOTION: joystick: %d axis: %d value: %d code: %d\n",
+                 event.jaxis.which, event.jaxis.axis, event.jaxis.value, SDL_JoystickAxisEventCodeById(event.jbutton.which, event.jbutton.button));
           break;
 
         case SDL_JOYBUTTONDOWN:
-          printf("SDL_JOYBUTTONDOWN: joystick: %d button: %d state: %d\n",
-                 event.jbutton.which, event.jbutton.button, event.jbutton.state);
+          printf("SDL_JOYBUTTONDOWN: joystick: %d button: %d state: %d code:%d\n",
+                 event.jbutton.which, event.jbutton.button, event.jbutton.state, SDL_JoystickButtonEventCodeById(event.jbutton.which, event.jbutton.button));
           break;
 
         case SDL_JOYBUTTONUP:
-          printf("SDL_JOYBUTTONUP: joystick: %d button: %d state: %d\n",
-                 event.jbutton.which, event.jbutton.button, event.jbutton.state);
+          printf("SDL_JOYBUTTONUP: joystick: %d button: %d state: %d code:%d\n",
+                 event.jbutton.which, event.jbutton.button, event.jbutton.state, SDL_JoystickButtonEventCodeById(event.jbutton.which, event.jbutton.button));
           break;
 
         case SDL_JOYHATMOTION:
-          printf("SDL_JOYHATMOTION: joystick: %d hat: %d value: %d\n",
-                 event.jhat.which, event.jhat.hat, event.jhat.value);
+          printf("SDL_JOYHATMOTION: joystick: %d hat: %d value: %d code: %d\n",
+                 event.jhat.which, event.jhat.hat, event.jhat.value, SDL_JoystickHatEventCodeById(event.jbutton.which, event.jbutton.button));
           break;
 
         case SDL_JOYBALLMOTION:
@@ -569,7 +603,7 @@ int main(int argc, char** argv)
   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
   // FIXME: We don't need video, but without it SDL will fail to work in SDL_WaitEvent()
-  if(SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) < 0)
+  if(SDL_Init(SDL_INIT_JOYSTICK) < 0)
   {
     fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
     exit(1);
@@ -605,6 +639,10 @@ int main(int argc, char** argv)
     {
       list_joysticks();
     }
+    else if (argc == 2 && (strcmp(argv[1], "--infopath") == 0))
+      {
+	infopath();
+      }
     else if (argc == 3 && (strcmp(argv[1], "--gamecontroller") == 0 ||
                            strcmp(argv[1], "-g") == 0))
     {
